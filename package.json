@@ -13,6 +13,7 @@
     "node-localstorage": "^2.2.1",
     "node-notifier": "^10.0.1",
     "open": "^8.4.0",
+    "vhost": "^3.0.2",
     "web-push": "^3.5.0"
   }
 }
