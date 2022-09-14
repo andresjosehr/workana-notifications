@@ -1,8 +1,7 @@
-const LocalStorage = require('node-localstorage')
 const fetch = require('node-fetch');
-const notifier = require('node-notifier');
-const open = require('open');
+const {query} = require('../database/index');
 
+const webspush = require('../webpush');
 var jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 const { window } = new JSDOM();
@@ -10,21 +9,16 @@ const { document } = (new JSDOM('')).window;
 global.document = document;
 
 var $ = jQuery = require('jquery')(window);
-const localStorage = new LocalStorage.LocalStorage('./scratch');
 
-  if(localStorage.getItem('projects')===null){
-    localStorage.setItem('projects', JSON.stringify([]));
-  }
 
+
+const fetchProjects = async (req, res) => {
+  
   const months = { Enero: '01', Febrero: '02', Marzo: '03', Abril: '04', Mayo: '05', Junio: '06', Julio: '07', Agosto: '08', Septiembre: '09', Octubre: '10', Noviembre: '11', Diciembre: '12'}
-  const projects = JSON.parse(localStorage.getItem('projects'));
+  const projects = await query('SELECT * FROM projects');
+  
 
-  notifier.on('click', function (notifierObject, options) {    
-    open(projects.find(p => p.title === options.t).link);
-  });
-
-  function fetchWorkanaProjects(){
-    console.log('=======================================================')
+  console.log('=======================================================')
 
     fetch("https://www.workana.com/jobs?category=it-programming&language=en%2Ces", {
       "headers": {
@@ -49,7 +43,7 @@ const localStorage = new LocalStorage.LocalStorage('./scratch');
     }).then(function (response) {
       return response.text();
     })
-    .then(function (response) {
+    .then(async function (response) {
       const htmlObject = $('<div>'+response+'</div>');
       const fetchProjects = [];
       htmlObject.find(".project-item").each(function(index, element) {
@@ -72,7 +66,8 @@ const localStorage = new LocalStorage.LocalStorage('./scratch');
         });
       });
 
-      newProjects.forEach(function(project) {
+      const subscriptions = await query('SELECT * FROM machine_keys');
+      newProjects.forEach(async function(project) {
 
         const date = new Date(project.date);
         const now = new Date();
@@ -81,27 +76,24 @@ const localStorage = new LocalStorage.LocalStorage('./scratch');
         console.log('Project Datetime: '+ (new Date(date)).toLocaleString());
         console.log('Current Datetime: '+ (new Date(now)).toLocaleString());
         console.log(date.getTime() - now.getTime())
+        
         // If project date is less than 5 minutes from now, notify
         if(date.getTime() - now.getTime() > -300000) {
 
-          // Object
-          notifier.notify({
-            title: project.title,
-            message: project.description,
-            icon: './workana.png',
-          });
-          const text = `${project.title}%0A${project.date}%0A%0A${project.description}%0A%0A${project.link}`
+          const payload = JSON.stringify({ title: project.title, message: project.description });
+          
+          subscriptions.forEach(async e => {
+            await webspush.sendNotification(JSON.parse(e.subscription), payload).catch(err => console.error(err));
+          })
 
+          const text = `${project.title}%0A${project.date}%0A%0A${project.description}%0A%0A${project.link}`
           fectchTelegramNotification(text, 'andresjosehr');
           fectchTelegramNotification(text, 'Esthefalop');
 
         }
+        await query('INSERT INTO projects (title, description, date, link) VALUES (?, ?, ?, ?)', [project.title, project.description, project.date, project.link]);
         projects.push(project);
       })
-      localStorage.setItem('projects', JSON.stringify(projects));
-
-      // Set timeout to fetch again
-      setTimeout(fetchWorkanaProjects, 1000 * 60 * 1);
 
       console.info(
         'Script ejecutado a las ' + new Date().toLocaleTimeString() + ' del ' + new Date().toLocaleDateString()
@@ -109,36 +101,36 @@ const localStorage = new LocalStorage.LocalStorage('./scratch');
       console.log('Numero de proyectos consultados: ' + fetchProjects.length)
       console.log('=======================================================')
 
+
+      res.status(200).json();
     })
     .catch(function (err) {
       console.error('Ha ocurrido un error inesperado: ');
       console.error(err);
-      setTimeout(fetchWorkanaProjects, 1000 * 60 * 1);
     });
-  }
+};
 
-  fetchWorkanaProjects();
+function fectchTelegramNotification(text, user){
+  fetch(`http://api.callmebot.com/text.php?user=${user}&text=${text}`, {
+    "headers": {
+      "accept": "application/json, text/plain, */*",
+      "sec-ch-ua": "\"Chromium\";v=\"104\", \" Not A;Brand\";v=\"99\", \"Microsoft Edge\";v=\"104\"",
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": "\"Windows\"",
+      "x-requested-with": "XMLHttpRequest"
+    },
+    "referrer": `http://api.callmebot.com/text.php?user=${user}&text=${text}`,
+    "referrerPolicy": "strict-origin-when-cross-origin",
+    "body": null,
+    "method": "GET",
+    "mode": "cors",
+    "credentials": "omit"
+    }).catch(function (err) {
+      console.error('Ha ocurrido un error inesperado: ');
+      console.error(err);
+    });
+}
 
-
-
-
-  function fectchTelegramNotification(text, user){
-    fetch(`http://api.callmebot.com/text.php?user=${user}&text=${text}`, {
-      "headers": {
-        "accept": "application/json, text/plain, */*",
-        "sec-ch-ua": "\"Chromium\";v=\"104\", \" Not A;Brand\";v=\"99\", \"Microsoft Edge\";v=\"104\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "x-requested-with": "XMLHttpRequest"
-      },
-      "referrer": `http://api.callmebot.com/text.php?user=${user}&text=${text}`,
-      "referrerPolicy": "strict-origin-when-cross-origin",
-      "body": null,
-      "method": "GET",
-      "mode": "cors",
-      "credentials": "omit"
-      }).catch(function (err) {
-        console.error('Ha ocurrido un error inesperado: ');
-        console.error(err);
-      });
-  }
+module.exports = {
+  fetchProjects
+}

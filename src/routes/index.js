@@ -1,19 +1,14 @@
 const { Router } = require('express');
-const webspush = require('../webpush');
 const router = Router();
-let pushSubscription;
-
-router.post('/subscribe', async (req, res) => {
-  pushSubscription = req.body;
-  res.status(200).json();
-});
+const {fetchProjects} = require('../controllers/notificationsController');
+const db = require('../database/index');
+const {subscribe, getPublicVapidKey} = require('../controllers/subscriptionController');
+const {sendTestNotification} = require('../controllers/testController');
 
 
-
-router.get('/noti', async (req, res) => {
-  const payload = JSON.stringify({ title: 'Push Test', message: 'Hola mundo' });
-  res.status(200).json();
-  await webspush.sendNotification(pushSubscription, payload).catch(err => console.error(err));
-});
+router.post('/subscribe', subscribe);
+router.get('/test-notification', sendTestNotification);
+router.get('/fetch-projects', fetchProjects);
+router.get('/get-public-vapid-key', getPublicVapidKey);
 
 module.exports = router;

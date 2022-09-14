@@ -5,6 +5,10 @@ self.addEventListener('push', e => {
     console.log('Push recibido...');
     self.registration.showNotification(data.title, {
         body: data.message,
-        icon: 'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://workana.com&size=64'
+        icon: 'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://workana.com&size=64',
+    });
+
+    self.addEventListener('notificationclick', function(event) {
+        console.log('click en la notificacion');
     });
 });
