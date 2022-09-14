@@ -4,6 +4,7 @@ const express = require('express');
 const subdomain = require('express-subdomain');
 const morgan = require('morgan');
 const path = require('path');
+const router = express.Router();
 
 const app = express();
 
