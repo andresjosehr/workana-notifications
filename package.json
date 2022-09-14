@@ -4,7 +4,8 @@
   "description": "Scripts to send notifications to Workana users",
   "private": true,
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "start-prod": "forever start -o out.log -e err.log src/index.js"
   },
   "dependencies": {
     "dotenv": "^16.0.2",

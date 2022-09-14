@@ -2,7 +2,7 @@ const {query} = require('../database/index');
 const webspush = require('../webpush');
 
 const sendTestNotification = async (req, res) => {
-  const payload = JSON.stringify({ title: 'Push Test', message: 'Hola mundo' });
+  const payload = JSON.stringify({ title: 'Push Test', message: 'Hola mundo 2', link: 'https://andresjosehr.com'} );
   const subscriptions = await query("SELECT * FROM machine_keys");
 
   subscriptions.forEach(async e => {
