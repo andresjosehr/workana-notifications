@@ -89,6 +89,7 @@ const fetchProjects = async (req, res) => {
           const text = `${project.title}%0A${project.date}%0A%0A${project.description}%0A%0A${project.link}`
           fectchTelegramNotification(text, 'andresjosehr');
           fectchTelegramNotification(text, 'Esthefalop');
+          fectchTelegramNotification(text, 'santiago19t');
 
         }
         await query('INSERT INTO projects (title, description, date, link) VALUES (?, ?, ?, ?)', [project.title, project.description, project.date, project.link]);
