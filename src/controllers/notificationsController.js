@@ -75,7 +75,6 @@ const fetchProjects = async (req, res) => {
         console.log('Project Name: '+  project.title);
         console.log('Project Datetime: '+ (new Date(date)).toLocaleString());
         console.log('Current Datetime: '+ (new Date(now)).toLocaleString());
-        console.log(date.getTime() - now.getTime())
 
         // If project date is less than 5 minutes from now, notify
         if(date.getTime() - now.getTime() > -300000) {
@@ -83,7 +82,8 @@ const fetchProjects = async (req, res) => {
           const payload = JSON.stringify({ title: project.title, message: project.description, link: project.link });
           
           subscriptions.forEach(async e => {
-            sendPushNotification(e.subscription, payload);
+            const subscription = JSON.parse(e.subscription)
+            await sendPushNotification(subscription, payload);
           })
 
           const text = `${project.title}%0A${project.date}%0A%0A${project.description}%0A%0A${project.link}`
@@ -132,7 +132,9 @@ function fectchTelegramNotification(text, user){
 }
 
 async function sendPushNotification(subscription, payload) {
-  await webspush.sendNotification(JSON.parse(subscription), payload).catch(err => {
+  await webspush.sendNotification(subscription, payload).catch(err => {
+    console.log('Ocurrio un error');
+    console.log(err);
       setTimeout(() => {
         sendPushNotification(subscription, payload);
       }, 30000);
