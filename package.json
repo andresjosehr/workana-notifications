@@ -8,6 +8,7 @@
     "start-prod": "forever start -o out.log -e err.log src/index.js"
   },
   "dependencies": {
+    "axios": "^0.27.2",
     "dotenv": "^16.0.2",
     "express": "^4.18.1",
     "jquery": "^3.6.1",
