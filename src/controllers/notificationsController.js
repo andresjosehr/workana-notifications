@@ -50,7 +50,7 @@ const fetchProjects = async (req, res) => {
         const title = $(element).find('span').attr('title')+' - '+$(element).find('.values').text();
         const description = $(element).find('.expander').text()
         const date = $(element).find('span.date').attr('title');
-        const date2 =  months[date.split(' ')[1].replace(',', '')] + '-'  + date.split(' ')[0] + '-2022' + date.split(', 2022')[1]+':00';
+        const date2 =  months[date.split(' ')[1].replace(',', '')] + '-'  + date.split(' ')[0] + '-2023' + date.split(', 2023')[1]+':00';
         const date3 = new Date(date2);
         // mm-dd-yyyy hh:mm:ss
         const date4 = (date3.getMonth()+1) + '-' + date3.getDate() + '-' + date3.getFullYear() + ' ' + date3.getHours() + ':' + date3.getMinutes() + ':' + date3.getSeconds();
