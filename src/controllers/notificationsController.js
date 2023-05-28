@@ -92,7 +92,7 @@ const fetchProjects = async (req, res) => {
           // Get project id
           const project_id = await query('SELECT id FROM projects WHERE title = ? AND description = ? AND date = ? AND link = ?', [project.title, project.description, project.date, project.link]);
 
-          const text = `${project.title}%0A${project.date}%0A%0A${project.description}%0A%0A${project.link}%0A%0APropuesta: https://workana-notifications.andresjosehr.com/build-bid${project_id[0].id}`;
+          const text = `${project.title}%0A${project.date}%0A%0A${project.description}%0A%0A${project.link}%0A%0APropuesta: https://workana-notifications.andresjosehr.com/build-bid/${project_id[0].id}`;
           fectchTelegramNotification(text, 'andresjosehr');
           fectchTelegramNotification(text, 'Esthefalop');
           fectchTelegramNotification(text, 'santiago19t');
