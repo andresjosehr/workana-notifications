@@ -78,7 +78,7 @@ const fetchProjects = async (req, res) => {
         console.log('Current Datetime: '+ (new Date(now)).toLocaleString());
 
         // If project date is less than 5 minutes from now, notify
-        if(date.getTime() - now.getTime() > -300000) {
+        // if(date.getTime() - now.getTime() > -300000) {
 
           const payload = JSON.stringify({ title: project.title, message: project.description, link: project.link });
           
@@ -96,8 +96,9 @@ const fetchProjects = async (req, res) => {
           fectchTelegramNotification(text, 'andresjosehr');
           fectchTelegramNotification(text, 'Esthefalop');
           fectchTelegramNotification(text, 'santiago19t');
+          fectchTelegramNotification(text, 'omarjosehr');
 
-        }
+        // }
         projects.push(project);
       })
 
