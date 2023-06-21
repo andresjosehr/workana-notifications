@@ -87,19 +87,22 @@ const fetchProjects = async (req, res) => {
             await sendPushNotification(subscription, payload);
           })
 
-          await query('INSERT INTO projects (title, description, date, link) VALUES (?, ?, ?, ?)', [project.title, project.description, project.date, project.link]);
-        
-          // Get project id
-          const project_id = await query('SELECT id FROM projects WHERE title = ? AND description = ? AND date = ? AND link = ?', [project.title, project.description, project.date, project.link]);
+          try{
+            await query('INSERT INTO projects (title, description, date, link) VALUES (?, ?, ?, ?)', [project.title, project.description, project.date, project.link]);
+          
+            // Get project id
+            const project_id = await query('SELECT id FROM projects WHERE title = ? AND description = ? AND date = ? AND link = ?', [project.title, project.description, project.date, project.link]);
 
-          const text = `${project.title}%0A${project.date}%0A%0A${project.description}%0A%0A${project.link}%0A%0APropuesta: https://workana-notifications.andresjosehr.com/build-bid/${project_id[0].id}`;
-          fectchTelegramNotification(text, 'andresjosehr');
-          fectchTelegramNotification(text, 'Esthefalop');
-          fectchTelegramNotification(text, 'santiago19t');
-          fectchTelegramNotification(text, 'omarjosehr');
+            const text = `${project.title}%0A${project.date}%0A%0A${project.description}%0A%0A${project.link}%0A%0APropuesta: https://workana-notifications.andresjosehr.com/build-bid/${project_id[0].id}`;
+            fectchTelegramNotification(text, 'andresjosehr');
+            fectchTelegramNotification(text, 'Esthefalop');
+            fectchTelegramNotification(text, 'santiago19t');
+            fectchTelegramNotification(text, 'omarjosehr');
+            projects.push(project);
+          } catch(err) {
+            console.error(err);
+          }
 
-        // }
-        projects.push(project);
       })
 
       console.info(
