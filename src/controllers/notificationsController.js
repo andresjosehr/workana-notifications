@@ -82,16 +82,17 @@ const fetchProjects = async (req, res) => {
 
           const payload = JSON.stringify({ title: project.title, message: project.description, link: project.link });
           
-          subscriptions.forEach(async e => {
-            const subscription = JSON.parse(e.subscription)
-            await sendPushNotification(subscription, payload);
-          })
 
           try{
             await query('INSERT INTO projects (title, description, date, link) VALUES (?, ?, ?, ?)', [project.title, project.description, project.date, project.link]);
           
             // Get project id
             const project_id = await query('SELECT id FROM projects WHERE title = ? AND description = ? AND date = ? AND link = ?', [project.title, project.description, project.date, project.link]);
+
+            subscriptions.forEach(async e => {
+            const subscription = JSON.parse(e.subscription)
+            await sendPushNotification(subscription, payload);
+          })
 
             const text = `${project.title}%0A${project.date}%0A%0A${project.description}%0A%0A${project.link}%0A%0APropuesta: https://workana-notifications.andresjosehr.com/build-bid/${project_id[0].id}`;
             fectchTelegramNotification(text, 'andresjosehr');
