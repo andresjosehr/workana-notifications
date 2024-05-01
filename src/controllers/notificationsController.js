@@ -2,7 +2,6 @@ const fetch = require('node-fetch');
 const {query} = require('../database/index');
 const moment = require('moment');
 
-const webspush = require('../webpush');
 var jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 const { window } = new JSDOM();
@@ -12,8 +11,10 @@ const { Configuration, OpenAIApi } = require("openai");
 
 var $ = jQuery = require('jquery')(window);
 
-
 const cheerio = require('cheerio');
+
+// Import axios
+const axios = require('axios');
 
 
 const fetchProjects = async (req, res) => {
@@ -193,62 +194,35 @@ const buildProposal = async (req, res) => {
   }
 
 
-  const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-  const openai = new OpenAIApi(configuration);
-
-  const completion = await openai.createChatCompletion({
-    "model": "gpt-3.5-turbo",
-    "temperature": 0,
+  const body = {
+    "model": "llama3-70b-8192",
+    "stream": false,
     "messages": [
         {
             "role": "system",
-            "content": "You are ChatGPT, a large language model trained by OpenAI."
+            "content": "You are a helpful AI assistant. Today is Wed May 01 2024, local time is 17:57:54 GMT-0400 (hora de Venezuela).\nIf you need to display math symbols and expressions, put them in double dollar signs \"$$\" (example: $$ x - 1 $$)"
         },
         {
             "role": "user",
-            "content": `
-            Si fueras un programador, quiero que me respondas dos cosas:
-
-            De que manera abordaras el requerimiento?
-            Porque tus experiencias son las indicadas para aceptar el requerimiento
-            
-            Ten en cuenta lo siguiente:
-            Quiero que hables como si le estuvieras hablando al cliente. 
-            Limitate a responder las preguntas sin saludar.
-            Especifica que tecnologia (Debes escoger entre Laravel, Angular, PHP, Typescript, Javascript, Wordpress) usaras para el desarrollo del requerimiento.
-            De que manera las tecnologias especificadas resuelven el requerimiento y porque son las indicadas.
-            
-            El requerimiento es el siguiente:
-
-            ${project[0].description}
-`
+            "content": "Necesito que redactes una propuesta en español para un requerimiento que debe tener la siguiente estructura:\n\n1) Introducción (Desarrollador web con 8 años de experiencia en Angular, Laravel y Wordpress).\n2) De que manera la experiencia y los proyectos realizados ayudan a tener una compresión del requerimiento y aportan valor.\n3) De que manera se abordará el requerimiento y que tecnologias se utilizarán (Angular, Laravel, PHP, Typescript, Javascript, Wordpress)\n4) Por que deberian elegirte a ti para el proyecto.\n5) Pregunta corta al cliente sobre algun aspecto del proyecto que tenga que ver con enteder mas a fondo algun aspecto del requerimiento\n\nPuntos a tener en cuenta\n\n2) Debe estar escrita en un tono humano y profesional, sin entusiasmo\n3) No se debe hablar de \"usted\" sino de \"tu\"\n4) La propuesta siempre debe empezar con \"Hola, soy desarrollador de software con mas de 8 años de experiencia...\n6) Evita usar verbos en futuro como \"Utilizaré\" o \"Desarrollare\", en su lugar utiliza \"Utilizaria\" y \"Desarrollaria\"\n6) Menciona por que eres el indicado para el proyecto mencionando e invitando al cliente a revisar el portafolio de proyectos en el perfil de workana\n6) Evita la palabra \"Creo\" o \"Yo creo\" ya que denotan inseguridad\n            \nEl requerimiento es el siguiente:\n\n ". project[0].description
         }
     ]
+}
+
+  // MAKE AXIOS REQUEST
+  const completion = await axios.post('https://api.groq.com/openai/v1/chat/completions', body, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.GROP_API_KEY}`
+    }
   });
+
     
   if(completion.status != 200) {
     return res.status(500).json({ error: completion.data });
   }
 
-  const text = 
-  `
-  
-¡Hola {{nombre}}! Soy Andrés, un desarrollador con más de 4 años de experiencia en la creación de sistemas, interfaces, bots y soluciones tecnológicas para hacer de la web un lugar mejor. Me especializo en el desarrollo de aplicaciones en Angular y Laravel, aplicando buenas prácticas y estándares de desarrollo para garantizar un código limpio, reutilizable y escalable.
-
-He trabajado tanto como empleado como freelance en numerosos proyectos, incluyendo aplicaciones de geolocalización, telemetría, gestión de datos y más. Además, tengo experiencia como líder de proyectos y puedo ayudar en la recopilación de requisitos, modelado de datos, planificación y más.
-
-${completion.data.choices[0].message.content}
-
-Puedes ver las reseñas de mis clientes anteriores en mi perfil de Workana, donde la responsabilidad y la buena comunicación son características que me definen en todos mis trabajos. Aquí está el enlace: https://www.workana.com/freelancer/f8e494dd42a93ae38a1ce8b38ecfca0b
-
-Te invito a revisar algunos de mis proyectos más recientes, como Proyexiot-v3, una plataforma de monitorización y telemetría, Superplan, un buscador avanzado de planes de salud, y Educline, una plataforma de gestión de educación en línea. También puedes ver mi proyecto personal, Pokemon List, en el siguiente enlace: https://proyectos.andresjosehr.com/pokemon-list
-
-Además, he trabajado en otros proyectos como Richard El Mentor, Educline, Asesorías Paulina Muñoz, Protección Animal, Tecno-Max y más. Puedes verlos en mi portafolio en https://andresjosehr.com.
-
-Te garantizo un trabajo de calidad y a la altura de tus expectativas, cumpliendo en todo momento con los más altos estándares de calidad. Me encantaría hablar más sobre cómo podemos trabajar juntos y responder cualquier pregunta que tengas sobre mí o mi trabajo. ¿Tienes algún plazo establecido para la realización del proyecto? ¡Hablemos!
-  `
+  const text =  completion.data.choices[0].message.content;
 
   // return text (not json and include break lines)
   res.set('Content-Type', 'text/plain');
