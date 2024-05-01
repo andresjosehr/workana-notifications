@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
 const {query} = require('../database/index');
+const moment = require('moment');
 
 const webspush = require('../webpush');
 var jsdom = require("jsdom");
@@ -11,6 +12,8 @@ const { Configuration, OpenAIApi } = require("openai");
 
 var $ = jQuery = require('jquery')(window);
 
+
+const cheerio = require('cheerio');
 
 
 const fetchProjects = async (req, res) => {
@@ -46,39 +49,63 @@ const fetchProjects = async (req, res) => {
     })
     .then(async function (response) {
       const htmlObject = $('<div>'+response+'</div>');
+      
+      
       const fetchProjects = [];
-      htmlObject.find(".project-item").each(function(index, element) {
-        const title = $(element).find('span').attr('title')+' - '+$(element).find('.values').text();
-        const description = $(element).find('.expander').text()
-        const date = $(element).find('span.date').attr('title');
-        const date2 =  months[date.split(' ')[1].replace(',', '')] + '-'  + date.split(' ')[0] + '-2023' + date.split(', 2023')[1]+':00';
-        const date3 = new Date(date2);
-        // mm-dd-yyyy hh:mm:ss
-        const date4 = (date3.getMonth()+1) + '-' + date3.getDate() + '-' + date3.getFullYear() + ' ' + date3.getHours() + ':' + date3.getMinutes() + ':' + date3.getSeconds();
+      htmlObject.find("job-card").each(function(index, element) {
+        // Get value of :card attribute
+        const card = $(element).attr(':card');
 
-        const link = 'https://www.workana.com'+$(element).find('a').attr('href');
-        fetchProjects.push({title, description, date: date4, link});
+        // Conver to json
+        const cardJson = JSON.parse(card);
+        // console.log(cardJson)
+        
+        const title = cheerio.load(cardJson.title, { decodeEntities: true, trim: true }).text()        
+        let description = cheerio.load(cardJson.description, { decodeEntities: true, trim: true }).text()
+
+        const aditionalInfo = [
+          'Categoría',
+          'Subcategoría',
+          '¿Es un proyecto o una posición?',
+          'Actualmente tengo',
+          'Disponibilidad requerida',
+          'Roles necesarios'
+        ];
+
+        aditionalInfo.forEach(function(info, i) {
+          // If first
+          if(i === 0) {
+            // replace with breakline
+            description = description.replace(info, '\n\n' + info);
+            return;
+          }
+          
+          // replace with breakline
+          
+        });
+
+
+
+        const currentDate = moment().format('YYYY-MM-DD HH:mm:ss');
+        const timeAgo = cardJson.postedDate;
+        const link = 'https://www.workana.com/job/' + cardJson.slug;
+        const price = cardJson.budget;
+        
+        fetchProjects.push({title, description, date: currentDate, timeAgo: timeAgo, link, price});
       });
+
 
       // Compare projects to find new ones
       const newProjects = fetchProjects.filter(function(project) {
         return !projects.find(function(p) {
-          return p.title === project.title && p.description === project.description && p.date === project.date;
+          return p.title === project.title && p.description === project.description;
         });
       });
 
-      const subscriptions = await query('SELECT * FROM machine_keys');
       newProjects.forEach(async function(project) {
 
         const date = new Date(project.date);
         const now = new Date();
-
-        console.log('Project Name: '+  project.title);
-        console.log('Project Datetime: '+ (new Date(date)).toLocaleString());
-        console.log('Current Datetime: '+ (new Date(now)).toLocaleString());
-
-        // If project date is less than 5 minutes from now, notify
-        // if(date.getTime() - now.getTime() > -300000) {
 
           const payload = JSON.stringify({ title: project.title, message: project.description, link: project.link });
           
@@ -89,16 +116,24 @@ const fetchProjects = async (req, res) => {
             // Get project id
             const project_id = await query('SELECT id FROM projects WHERE title = ? AND description = ? AND date = ? AND link = ?', [project.title, project.description, project.date, project.link]);
 
-            subscriptions.forEach(async e => {
-            const subscription = JSON.parse(e.subscription)
-            await sendPushNotification(subscription, payload);
-          })
+            // subscriptions.forEach(async e => {
+            // const subscription = JSON.parse(e.subscription)
+            // await sendPushNotification(subscription, payload);
+          // })
 
-            const text = `${project.title}%0A${project.date}%0A%0A${project.description}%0A%0A${project.link}%0A%0APropuesta: https://workana-notifications.andresjosehr.com/build-bid/${project_id[0].id}`;
+          // Encode title and description to be used in the telegram notification
+
+            // Replace break lines with %0A
+            project.description = project.description.replace(/\n/g, '%0A');
+
+            let text = `${project.price} - ${project.title}%0A%0A${project.description}%0A%0A${project.link}%0A%0APropuesta: https://workana-notifications.andresjosehr.com/build-bid/${project_id[0].id}`;
+
+            // replace break lines with %0A
+            // 
             fectchTelegramNotification(text, 'andresjosehr');
-            fectchTelegramNotification(text, 'Esthefalop');
-            fectchTelegramNotification(text, 'santiago19t');
-            fectchTelegramNotification(text, 'omarjosehr');
+            // fectchTelegramNotification(text, 'Esthefalop');
+            // fectchTelegramNotification(text, 'santiago19t');
+            // fectchTelegramNotification(text, 'omarjosehr');
             projects.push(project);
           } catch(err) {
             console.error(err);
@@ -106,11 +141,11 @@ const fetchProjects = async (req, res) => {
 
       })
 
-      console.info(
-        'Script ejecutado a las ' + new Date().toLocaleTimeString() + ' del ' + new Date().toLocaleDateString()
-      )
-      console.log('Numero de proyectos consultados: ' + fetchProjects.length)
-      console.log('=======================================================')
+      // console.info(
+      //   'Script ejecutado a las ' + new Date().toLocaleTimeString() + ' del ' + new Date().toLocaleDateString()
+      // )
+      // console.log('Numero de proyectos consultados: ' + fetchProjects.length)
+      // console.log('=======================================================')
 
 
       res.status(200).json();
@@ -142,15 +177,6 @@ function fectchTelegramNotification(text, user){
     });
 }
 
-async function sendPushNotification(subscription, payload) {
-  await webspush.sendNotification(subscription, payload).catch(err => {
-    console.log('Ocurrio un error');
-    console.log(err);
-      setTimeout(() => {
-        sendPushNotification(subscription, payload);
-      }, 30000);
-  });
-};
 
 const buildProposal = async (req, res) => { 
   // Get id path param
