@@ -49,17 +49,25 @@ const fetchProjects = async (req, res) => {
       return response.text();
     })
     .then(async function (response) {
+      // console.log(response);
       const htmlObject = $('<div>'+response+'</div>');
-      
-      
-      const fetchProjects = [];
-      htmlObject.find("job-card").each(function(index, element) {
-        // Get value of :card attribute
-        const card = $(element).attr(':card');
 
+      const searchObject = htmlObject.find("search");
+
+      // Get value of :options attribute
+      const options = JSON.parse(searchObject.attr(':results-initials'));
+      // console.log(options.results);
+      
+      
+
+
+      const fetchProjects = [];
+      options.results.forEach(function(element, index) {
+        // Get value of :card attribute
+
+        // console.log(index, element);
         // Conver to json
-        const cardJson = JSON.parse(card);
-        // console.log(cardJson)
+        const cardJson = element
         
         const title = cheerio.load(cardJson.title, { decodeEntities: true, trim: true }).text()        
         let description = cheerio.load(cardJson.description, { decodeEntities: true, trim: true }).text()
@@ -142,11 +150,11 @@ const fetchProjects = async (req, res) => {
 
       })
 
-      // console.info(
-      //   'Script ejecutado a las ' + new Date().toLocaleTimeString() + ' del ' + new Date().toLocaleDateString()
-      // )
-      // console.log('Numero de proyectos consultados: ' + fetchProjects.length)
-      // console.log('=======================================================')
+      console.info(
+        'Script ejecutado a las ' + new Date().toLocaleTimeString() + ' del ' + new Date().toLocaleDateString()
+      )
+      console.log('Numero de proyectos consultados: ' + fetchProjects.length)
+      console.log('=======================================================')
 
 
       res.status(200).json();
