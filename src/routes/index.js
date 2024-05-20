@@ -9,12 +9,28 @@ const {sendTestNotification} = require('../controllers/testController');
 
 router.post('/subscribe', subscribe);
 router.get('/test-notification', sendTestNotification);
-router.get('/fetch-projects', fetchProjects);
+
 router.get('/get-public-vapid-key', getPublicVapidKey);
 
-router.get('/build-bid/:id', buildProposal)
+router.get('/build-bid/:id/:platform', buildProposal)
 
+router.get('/fetch-projects', (req, res) => {
+  try {
+    fetchProjects(req, res, db);  
+  } catch (error) {
+    
+  }
 
-router.get('/fetch-upwork-projects', fetchUpworkProjects);
+  try {
+    fetchUpworkProjects(req, res, db);  
+  } catch (error) {
+    
+  }
+  
+  
+
+  res.status(200).json({message: 'Success'});
+});
+
 
 module.exports = router;

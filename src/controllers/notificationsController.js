@@ -135,7 +135,7 @@ const fetchProjects = async (req, res) => {
             // Replace break lines with %0A
             project.description = project.description.replace(/\n/g, '%0A');
 
-            let text = `${project.price} - ${project.title}%0A%0A${project.description}%0A%0A${project.link}%0A%0APropuesta: https://workana-notifications.andresjosehr.com/build-bid/${project_id[0].id}`;
+            let text = `WORKANA %0A%0A ${project.price} - ${project.title}%0A%0A${project.description}%0A%0A${project.link}%0A%0APropuesta: https://workana-notifications.andresjosehr.com/build-bid/${project_id[0].id}/workana`;
 
             // replace break lines with %0A
             // 
@@ -157,7 +157,7 @@ const fetchProjects = async (req, res) => {
       console.log('=======================================================')
 
 
-      res.status(200).json();
+      // res.status(200).json();
     })
     .catch(function (err) {
       console.error('Ha ocurrido un error inesperado: ');
@@ -190,12 +190,17 @@ function fectchTelegramNotification(text, user){
 const buildProposal = async (req, res) => { 
   // Get id path param
   const { id } = req.params;
+
+  const table = {
+    workana: 'projects',
+    upwork: 'upwork_projects'
+  }
   
   if(!id) {
     res.status(400).json({ error: 'Id is required' });
   }
 
-  const project = await query('SELECT * FROM projects WHERE id = ?', [id]);
+  const project = await query('SELECT * FROM '+ table[req.params.platform] + ' WHERE id = ?', [id]);
 
 
   if(!project.length) {

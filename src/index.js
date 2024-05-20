@@ -7,6 +7,7 @@ const router = express.Router();
 const app = express()
 
 const db = require('./database/index');
+// const sqlite = require('./database/sqlite');
 
 // Middlewares
 app.use(morgan('dev'));
